@@ -1,0 +1,136 @@
+{
+  "name": "School-mail-sumarized",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "simple": false,
+        "filters": {
+          "labelIds": [
+            "YOUR_GMAIL_LABEL_ID"
+          ]
+        },
+        "options": {}
+      },
+      "id": "97bf5e6a-7ded-4160-bad1-577892e62ac7",
+      "name": "Gmail Trigger",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [
+        1232,
+        -544
+      ],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "Reconnect your Gmail credential after import. Label ID is for '3 School' label."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_NTFY_URL/YOUR_TOPIC",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Title",
+              "value": "={{ $('Gmail Trigger').item.json.subject }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $('Gmail Trigger').item.json.headers.from }}\n\n{{ $json.content }}",
+        "options": {}
+      },
+      "id": "99715235-65c9-4307-b0e2-048a42a5c7c4",
+      "name": "Send ntfy Notification1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1728,
+        -544
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "llama3.2:latest",
+          "mode": "list",
+          "cachedResultName": "llama3.2:latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Summarize this school email in 3-5 bullet points. Flag any action items or deadlines. You cant make the text bold.\n\n  From: {{ $json.headers.from }}\n  Subject: {{ $json.headers.subject }}\n\n  {{ $json.text }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        1424,
+        -544
+      ],
+      "id": "c42e6d50-0ee7-4d4f-b00e-fbf3e847a3d2",
+      "name": "Message a model",
+      "credentials": {
+        "ollamaApi": {
+          "id": "YOUR_OLLAMA_CREDENTIAL_ID",
+          "name": "Ollama account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send ntfy Notification1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "6e56ac43-36a0-479c-91c5-fdca6bcdf057",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "tags": []
+}

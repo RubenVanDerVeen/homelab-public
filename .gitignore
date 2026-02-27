@@ -1,0 +1,27 @@
+# Secrets & environment files — never commit these
+.env
+.env.local
+*.env
+
+# Common secret file patterns
+secrets/
+*secret*
+*password*
+*credentials*
+
+# OS clutter
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Claude Code local settings
+.claude/
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+*.log

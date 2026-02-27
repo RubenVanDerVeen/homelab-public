@@ -1,0 +1,207 @@
+###############################################
+# GeneralDock Docker compose
+###############################################
+
+networks:
+  tugtainer:
+    driver: bridge
+volumes:
+  tugtainer_data:
+  pulse-data:
+    driver: local
+  n8n-data:
+    name: n8n-data
+  tracktor-data:
+    name: tracktor-data
+  ntfy-data:
+    name: ntfy-data
+  uptime-kuma-data:
+    name: uptime-kuma-data
+
+services:
+###############################################
+# Tugtainer with Socketproxy
+###############################################
+
+  # Socket proxy is used by default,
+  # but you can mount docker socket directly
+  # and remove this service and DOCKER_HOST variable
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: socket-proxy
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      IMAGES: 1
+      INFO: 1
+      LOG_LEVEL: warning
+      PING: 1
+      NETWORKS: 1
+      POST: 1
+      TZ: Europe/Amsterdam
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer
+    labels:
+      dev.quenary.tugtainer.protected: True
+  tugtainer:
+    depends_on:
+      - socket-proxy
+    container_name: tugtainer
+    image: ghcr.io/quenary/tugtainer:1
+    volumes:
+      - tugtainer_data:/tugtainer
+      # You can uncomment this to mount socket directly,
+      # and remove socket-proxy service and DOCKER_HOST variable
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    environment:
+      # The list of available variables is in env.example
+      DOCKER_HOST: tcp://socket-proxy:2375
+    networks:
+      - tugtainer
+    ports:
+      - '9412:80'
+    labels:
+      dev.quenary.tugtainer.protected: True
+
+###############################################
+# Composetoolbox
+###############################################
+
+  composetoolbox:
+    image: ghcr.io/bluegoosemedia/composetoolbox
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+
+
+###############################################
+# Pulse - Monitoring
+###############################################
+
+  pulse:
+    image: ${PULSE_IMAGE:-rcourtman/pulse:5.1.9}
+    container_name: pulse
+    restart: unless-stopped
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    ports:
+      - "${PULSE_PORT:-7655}:7655"
+    volumes:
+      - pulse-data:/data
+      # Temperature monitoring: install pulse-agent on each Proxmox host with --enable-proxmox, or use SSH (see docs/TEMPERATURE_MONITORING.md).
+    environment:
+      - TZ=${TZ:-UTC}
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:7655/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+###############################################
+# n8n - Workflow automation
+###############################################
+
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    container_name: n8n
+    restart: unless-stopped
+    ports:
+      - '5678:5678'
+    volumes:
+      - n8n-data:/home/node/.n8n
+    environment:
+      - TZ=Europe/Amsterdam
+      - N8N_HOST=<YOUR_N8N_DOMAIN>
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=https
+      - WEBHOOK_URL=https://<YOUR_N8N_DOMAIN>
+      - N8N_ENCRYPTION_KEY=changeme
+      - N8N_PROXY_HOPS=1
+      - N8N_CORS_ALLOWED_ORIGINS=<YOUR_PORTFOLIO_DOMAIN>
+      - EXECUTIONS_TIMEOUT=1800  # 30 minutes — extend if Ollama inference is slow
+
+###############################################
+# ntfy - Push notifications
+###############################################
+
+  ntfy:
+    image: binwiederhier/ntfy:latest
+    container_name: ntfy
+    restart: unless-stopped
+    ports:
+      - '9090:80'
+    volumes:
+      - ntfy-data:/var/lib/ntfy
+    environment:
+      - TZ=Europe/Amsterdam
+    command: serve
+
+###############################################
+# Tracktor - Vehicle tracking
+###############################################
+
+  tracktor:
+    image: ghcr.io/javedh-dev/tracktor:latest # Use a specific version tag for production
+    container_name: tracktor-app
+    restart: always
+    ports:
+      - '3333:3000'
+    volumes:
+      - tracktor-data:/data # Database and uploads are placed in this location
+    environment:
+      - TRACKTOR_DEMO_MODE=false
+      - FORCE_DATA_SEED=false
+      - CORS_ORIGINS="http://localhost:3334" # Adjust as needed for your setup
+    # OR you can use an env file to manage environment variables
+    # env_file:
+    #   - ./.env
+    # Please check environemnt variables in the documentation for all configuration options
+    #
+
+###############################################
+# Uptime Kuma - Service uptime monitoring
+###############################################
+
+  uptime-kuma:
+    image: louislam/uptime-kuma:latest
+    container_name: uptime-kuma
+    restart: unless-stopped
+    ports:
+      - '3001:3001'
+    volumes:
+      - uptime-kuma-data:/app/data
+    environment:
+      - TZ=Europe/Amsterdam
+
+###############################################
+# Watchtower - Automatic container updates
+###############################################
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Europe/Amsterdam
+      - WATCHTOWER_SCHEDULE=0 0 3 * * 0
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=generic+http://<NTFY_IP>:<NTFY_PORT>/container-updates

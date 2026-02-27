@@ -1,0 +1,410 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ruben van der Veen — Portfolio</title>
+  <meta name="description" content="Electrical Engineering student, maker, and self-hosting enthusiast.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:ital,wght@0,300;0,400;0,500;0,700;1,400&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Page-level PCB canvas — fixed behind all content -->
+  <canvas id="pcb-canvas"></canvas>
+
+  <!-- ── Navigation ── -->
+  <nav id="navbar">
+    <div class="nav-inner">
+      <a href="#" class="nav-prompt">
+        <span class="c-green">ruben</span><span class="c-dim">@</span><span class="c-blue">portfolio</span><span class="c-dim">:~$</span>
+      </a>
+      <div class="nav-links">
+        <a href="#about" data-i18n="nav.about">./about</a>
+        <a href="#projects" data-i18n="nav.projects">./projects</a>
+        <a href="#skills" data-i18n="nav.skills">./skills</a>
+        <a href="#experience" data-i18n="nav.experience">./experience</a>
+        <a href="#contact" data-i18n="nav.contact">./contact</a>
+      </div>
+      <div class="lang-toggle">
+        <button class="lang-btn active" data-lang="en">EN</button>
+        <button class="lang-btn" data-lang="nl">NL</button>
+      </div>
+    </div>
+  </nav>
+
+  <!-- ── Hero ── -->
+  <section id="hero">
+    <div class="hero-terminals">
+
+      <!-- U1 · CMD-CTRL — main typewriter IC chip -->
+      <div class="ic-wrap hero-ic-main">
+        <div class="ic-pins ic-pins-left">
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+        </div>
+        <div class="ic-chip">
+          <div class="ic-header">
+            <span class="ic-ref">U1 · CMD-CTRL</span>
+            <span class="ic-pkg">12-DIP</span>
+          </div>
+          <div class="ic-body">
+            <div id="typewriter-output"></div>
+            <span class="tw-cursor" id="tw-cursor">█</span>
+            <div id="hero-links" class="hero-links">
+              <a href="https://github.com/RubenVanDerVeen" target="_blank" rel="noopener" class="hero-link">github/</a>
+              <a href="https://linkedin.com/in/ruben-van-der-veen-7384a0364/" target="_blank" rel="noopener" class="hero-link">linkedin/</a>
+              <a href="mailto:rubenvanderveen04@gmail.com" class="hero-link">email/</a>
+              <a href="https://www.instagram.com/ruben1vd1veen/" target="_blank" rel="noopener" class="hero-link">instagram/</a>
+            </div>
+          </div>
+        </div>
+        <div class="ic-pins ic-pins-right">
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+          <div class="ic-pin"></div>
+        </div>
+      </div>
+
+      <!-- U2 · OSC-SCOPE — 24-QFP oscilloscope IC chip -->
+      <div class="ic-qfp hero-ic-scope">
+        <div class="ic-pins-top">
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+        </div>
+        <div class="ic-qfp-row">
+          <div class="ic-pins ic-pins-left">
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+          </div>
+          <div class="ic-chip ic-chip-qfp">
+            <div class="ic-header">
+              <span class="ic-ref">U2 · OSC-SCOPE</span>
+              <span class="ic-pkg">24-QFP</span>
+            </div>
+            <div class="ic-body osc-body">
+              <canvas id="osc-canvas"></canvas>
+              <div class="osc-status">
+                <span class="c-green">CH1</span>
+                <span class="c-dim">│</span>
+                <span>3.3V</span>
+                <span class="c-dim">│</span>
+                <span>1.00kHz</span>
+                <span class="c-dim">│</span>
+                <span class="c-orange">AC ~</span>
+              </div>
+            </div>
+          </div>
+          <div class="ic-pins ic-pins-right">
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+          </div>
+        </div>
+        <div class="ic-pins-bottom">
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+        </div>
+      </div>
+
+    </div>
+    <div class="hero-scroll">
+      <span data-i18n="hero.scroll">scroll to explore</span>
+      <span class="scroll-arrow">↓</span>
+    </div>
+  </section>
+
+  <!-- ── About ── -->
+  <section id="about">
+    <div class="section-header">
+      <span class="section-node" id="node-about">
+        <span class="section-ref">D1</span>
+        <span class="section-led-comp"></span>
+      </span>
+      <span class="prompt-line" data-i18n-html="section.about.cmd">$ <span class="cmd">nano</span> about.txt</span>
+    </div>
+    <div class="about-grid">
+      <div class="about-text">
+        <div class="about-photo">
+          <div class="about-photo-frame">
+            <img src="Images/ruben_selfie.jpg" alt="Ruben van der Veen">
+          </div>
+          <span class="about-photo-label">// CAM-01</span>
+        </div>
+        <div class="about-text-content">
+          <p data-i18n-html="about.p1">Hey, I'm <span class="c-blue">Ruben van der Veen</span>. I'm 21 and an Electrical Engineering student at NHL Stenden in the Netherlands, with a background in Mechatronics Engineering at Firda. I enjoy building things: from designing parts for 3D printing to embedded systems, self hosted Linux infrastructure and AI-powered automation pipelines.</p>
+          <p data-i18n="about.p2">In my free time I like to do a lot of different things, such as:</p>
+          <ul class="about-list">
+            <li data-i18n="about.list.1">Tinkering with my homelab</li>
+            <li data-i18n="about.list.2">Working on hardware projects like a DIY powerbank or programmable Christmas lights</li>
+            <li data-i18n="about.list.3">Exploring music</li>
+            <li data-i18n="about.list.4">Enjoying drives, car meets, or working on my own cars</li>
+          </ul>
+        </div>
+      </div>
+      <!-- U3 · SYS-INFO — 48-QFP neofetch IC chip -->
+      <div class="ic-qfp">
+        <div class="ic-pins-top">
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          
+        </div>
+        <div class="ic-qfp-row">
+          <div class="ic-pins ic-pins-left">
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+          </div>
+          <div class="ic-chip ic-chip-qfp">
+            <div class="ic-header">
+              <span class="ic-ref">U3 · SYS-INFO</span>
+              <span class="ic-pkg">48-QFP</span>
+            </div>
+            <div class="ic-body neofetch-box">
+              <div id="neofetch-content"></div>
+            </div>
+          </div>
+          <div class="ic-pins ic-pins-right">
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+            <div class="ic-pin"></div>
+          </div>
+        </div>
+        <div class="ic-pins-bottom">
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+          <div class="ic-pin-v"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Projects ── -->
+  <section id="projects">
+    <div class="section-header">
+      <span class="section-node" id="node-projects">
+        <span class="section-ref">D2</span>
+        <span class="section-led-comp"></span>
+      </span>
+      <span class="prompt-line" data-i18n-html="section.projects.cmd">$ <span class="cmd">ls</span> -la ~/projects/</span>
+    </div>
+    <div class="project-filters" id="project-filters">
+      <button class="filter-btn active" data-filter="all" data-i18n="projects.filter.all">all</button>
+    </div>
+    <div class="projects-grid" id="projects-grid"></div>
+  </section>
+
+  <!-- ── Skills ── -->
+  <section id="skills">
+    <div class="section-header">
+      <span class="section-node" id="node-skills">
+        <span class="section-ref">D3</span>
+        <span class="section-led-comp"></span>
+      </span>
+      <span class="prompt-line" data-i18n-html="section.skills.cmd">$ <span class="cmd">nano</span> skills.txt</span>
+    </div>
+    <div class="skills-grid">
+      <div class="skills-col">
+        <div class="skill-category">
+          <div class="skill-cat-title"><span class="c-purple" data-i18n="skills.cat.technical"># Technical</span></div>
+          <ul class="skill-list">
+            <li><span class="c-green">▸</span> <span data-i18n="skills.tech.1">Electronics &amp; Embedded Systems</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.tech.2">Digital Logic Design (VHDL)</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.tech.3">PCB Design &amp; Prototyping</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.tech.4">3D designing &amp; 3D printing</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.tech.5">Self-hosting &amp; Linux Administration</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.tech.6">Networking — DNS, VPN, Reverse Proxies</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.tech.7">Workflow Automation (n8n)</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.tech.8">C Programming</span></li>
+          </ul>
+        </div>
+        <div class="skill-category">
+          <div class="skill-cat-title"><span class="c-purple" data-i18n="skills.cat.soft"># Soft Skills</span></div>
+          <ul class="skill-list">
+            <li><span class="c-green">▸</span> <span data-i18n="skills.soft.1">Creativity</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.soft.2">Project Management</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.soft.3">Time Management</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.soft.4">Problem Solving</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.soft.5">Data Analysis</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.soft.6">Communication &amp; Collaboration</span></li>
+            <li><span class="c-green">▸</span> <span data-i18n="skills.soft.7">Technical Documentation (IEEE standard)</span></li>
+          </ul>
+        </div>
+      </div>
+      <div class="skill-category">
+        <div class="skill-cat-title"><span class="c-purple" data-i18n="skills.cat.tools"># Tools &amp; Technologies</span></div>
+        <ul class="skill-list">
+          <li class="skill-divider" data-i18n="skills.div.eda">EDA &amp; Simulation</li>
+          <li><span class="c-green">▸</span> MATLAB</li>
+          <li><span class="c-green">▸</span> LTspice</li>
+          <li><span class="c-green">▸</span> VHDL</li>
+          <li><span class="c-green">▸</span> TIA Portal</li>
+          <li class="skill-divider" data-i18n="skills.div.design">Design</li>
+          <li><span class="c-green">▸</span> Onshape</li>
+          <li><span class="c-green">▸</span> Solidworks</li>
+          <li class="skill-divider" data-i18n="skills.div.dev">Development</li>
+          <li><span class="c-green">▸</span> Visual Studio Code</li>
+          <li><span class="c-green">▸</span> Git &amp; GitHub</li>
+          <li><span class="c-green">▸</span> Claude Code</li>
+          <li class="skill-divider" data-i18n="skills.div.docs">Documentation</li>
+          <li><span class="c-green">▸</span> Microsoft Office Suite</li>
+          <li><span class="c-green">▸</span> Typst</li>
+          <li class="skill-divider" data-i18n="skills.div.infra">Infrastructure</li>
+          <li><span class="c-green">▸</span> Proxmox VE</li>
+          <li><span class="c-green">▸</span> Docker / Docker Compose</li>
+          <li><span class="c-green">▸</span> Nginx / Nginx Proxy Manager</li>
+          <li><span class="c-green">▸</span> Cloudflare (Tunnel, DNS, DDNS)</li>
+          <li><span class="c-green">▸</span> Ollama (local LLM inference)</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Experience ── -->
+  <section id="experience">
+    <div class="section-header">
+      <span class="section-node" id="node-experience">
+        <span class="section-ref">D4</span>
+        <span class="section-led-comp"></span>
+      </span>
+      <span class="prompt-line" data-i18n-html="section.experience.cmd">$ <span class="cmd">nano</span> experience.log</span>
+    </div>
+    <div class="timeline" id="timeline"></div>
+  </section>
+
+  <!-- ── Contact ── -->
+  <section id="contact">
+    <div class="section-header">
+      <span class="section-node" id="node-contact">
+        <span class="section-ref">D5</span>
+        <span class="section-led-comp"></span>
+      </span>
+      <span class="prompt-line" data-i18n-html="section.contact.cmd">$ <span class="cmd">contact</span> --help</span>
+    </div>
+    <div class="contact-content">
+      <p class="contact-intro" data-i18n="contact.intro">Want to get in touch or collaborate? Here's where to find me:</p>
+      <div class="contact-grid">
+
+        <div class="contact-links">
+          <a href="https://github.com/RubenVanDerVeen" target="_blank" class="contact-link">
+            <span class="contact-cmd">$ open</span>
+            <span class="contact-label">github</span>
+            <span class="contact-url">github.com/RubenVanDerVeen</span>
+          </a>
+          <a href="https://linkedin.com/in/ruben-van-der-veen-7384a0364/" target="_blank" class="contact-link">
+            <span class="contact-cmd">$ open</span>
+            <span class="contact-label">linkedin</span>
+            <span class="contact-url">linkedin.com/in/ruben-van-der-veen-7384a0364/</span>
+          </a>
+          <a href="mailto:rubenvanderveen04@gmail.com" class="contact-link">
+            <span class="contact-cmd">$ mail</span>
+            <span class="contact-label">email</span>
+            <span class="contact-url">rubenvanderveen04@gmail.com</span>
+          </a>
+        </div>
+
+        <form id="contact-form" class="contact-form" novalidate>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="contact-name" data-i18n="contact.name.label">Name</label>
+              <input type="text" id="contact-name" class="form-input" placeholder="Your name" data-i18n-placeholder="contact.name.placeholder" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="contact-email" data-i18n="contact.email.label">Email Address</label>
+              <input type="email" id="contact-email" class="form-input" placeholder="your@email.com" data-i18n-placeholder="contact.email.placeholder" required>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="contact-message" data-i18n="contact.message.label">Message</label>
+            <textarea id="contact-message" class="form-input form-textarea" placeholder="Your message goes here..." data-i18n-placeholder="contact.message.placeholder" required></textarea>
+          </div>
+          <div class="form-footer">
+            <button type="submit" class="form-submit" data-i18n="contact.submit">$ send --message</button>
+            <span class="form-status" id="form-status"></span>
+          </div>
+        </form>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ── Footer ── -->
+  <footer>
+    <span class="prompt-line c-dim">ruben@portfolio:~$ <span class="tw-cursor">█</span></span>
+    <span class="footer-text c-dim" data-i18n="footer.text">Built with HTML, CSS, JS &amp; Claude — self-hosted on Proxmox</span>
+  </footer>
+
+  <!-- Lightbox — shared by timeline images -->
+  <div id="lightbox">
+    <span id="lightbox-close">✕</span>
+    <img id="lightbox-img" src="" alt="">
+  </div>
+
+  <script src="projects.js"></script>
+  <script src="experience.js"></script>
+  <script src="translations.js"></script>
+  <script src="main.js"></script>
+</body>
+</html>

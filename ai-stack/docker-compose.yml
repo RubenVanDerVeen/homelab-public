@@ -1,0 +1,116 @@
+###############################################
+# AI-Stack Docker compose
+###############################################
+
+volumes:
+  ollama-data:
+  open-webui-data:
+
+networks:
+  tugtainer_agent:
+    driver: bridge
+
+services:
+###############################################
+# Tugtainer with Socketproxy
+###############################################
+
+  # Socket proxy is used by default,
+  # but you can mount docker socket directly
+  # and remove this service and DOCKER_HOST variable
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: socket-proxy
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      IMAGES: 1
+      INFO: 1
+      LOG_LEVEL: warning
+      PING: 1
+      NETWORKS: 1
+      POST: 1
+      TZ: Europe/Amsterdam
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer_agent
+    labels:
+      dev.quenary.tugtainer.protected: True
+  agent:
+    depends_on:
+      - socket-proxy
+    container_name: tugtainer-agent
+    image: ghcr.io/quenary/tugtainer-agent:1
+    # volumes:
+      # You can uncomment this to mount socket directly,
+      # and remove socket-proxy service and DOCKER_HOST variable
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    environment:
+      # The list of available variables is in env.example
+      AGENT_SECRET: INSERT_SECRET
+      DOCKER_HOST: tcp://socket-proxy:2375
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer_agent
+    ports:
+      - '9413:8001'
+    labels:
+      dev.quenary.tugtainer.protected: True
+
+###############################################
+# Ollama - AI models
+###############################################
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama-data:/root/.ollama
+    environment:
+      - OLLAMA_NUM_PARALLEL=2       # concurrent requests
+      - OLLAMA_MAX_LOADED_MODELS=1  # only 1 model in RAM at a time (CPU)
+
+###############################################
+# Open WebUI - Interface for Ollama
+###############################################
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:main
+    container_name: open-webui
+    restart: unless-stopped
+    ports:
+      - "3000:8080"
+    volumes:
+      - open-webui-data:/app/backend/data
+    environment:
+      - OLLAMA_BASE_URL=http://ollama:11434
+      - WEBUI_AUTH=true             # enable login (first user becomes admin)
+    depends_on:
+      - ollama
+
+###############################################
+# Watchtower - Automatic container updates
+###############################################
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Europe/Amsterdam
+      - WATCHTOWER_SCHEDULE=0 0 3 * * 0
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=generic+http://<NTFY_IP>:<NTFY_PORT>/container-updates

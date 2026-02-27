@@ -1,0 +1,223 @@
+{
+  "name": "gmail-daily-digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "=0 17 * * *"
+            }
+          ]
+        }
+      },
+      "id": "8b716a9c-2d9b-4d9b-82c4-6b5e6fc1fdb5",
+      "name": "Every day at 17:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        128,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "returnAll": true,
+        "filters": {
+          "q": "in:inbox newer_than:1d"
+        }
+      },
+      "id": "71734eb3-7302-47ea-aecf-99eb1e917a12",
+      "name": "Get Today's Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -80
+      ],
+      "webhookId": "YOUR_WEBHOOK_ID",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "YOUR_GMAIL_CREDENTIAL_ID",
+          "name": "Gmail account"
+        }
+      },
+      "notes": "Reconnect your Gmail credential after import."
+    },
+    {
+      "parameters": {
+        "jsCode": "const emails = $input.all();\n\nif (emails.length === 0) {\n  return [{ json: { digest: 'No emails received today.', count: 0 } }];\n}\n\nconst block = emails.map((item, i) => {\n  const body = item.json.snippet || '';\n  return `--- Email ${i + 1} ---\\nFrom: ${item.json.From}\\nSubject: ${item.json.Subject}\\n\\n${body}`;\n}).join('\\n\\n');\n\nreturn [{ json: { digest: block, count: emails.length } }];"
+      },
+      "id": "9c8d8627-56b8-4662-9b76-8868226f847e",
+      "name": "Aggregate Emails",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        704,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_NTFY_URL/YOUR_TOPIC",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Title",
+              "value": "=Daily email digest: {{ $('Aggregate Emails').item.json.count }} emails"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "={{ $json.content }}",
+        "options": {}
+      },
+      "id": "cec21ab1-a9b4-40a6-aae5-bd5ea70c06c4",
+      "name": "Send ntfy Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1328,
+        -96
+      ]
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "llama3.2:latest",
+          "mode": "list",
+          "cachedResultName": "llama3.2:latest"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=You are my personal email assistant. Below are all emails I received today ({{ $json.count }} total).\n\nAt the top of your output, list any IMPORTANT emails - ones requiring action, with deadlines, or from important senders. List explicitly what action it needs and summarize it in 1 - 2 sentences. Below that list every mail and also summarize those in 1 - 2 sentences.\nDon't bold the text. Use the following architecture EXAMPLE for your entire output:\n(\nIMPORTANT EMAILS\n\n- Email from [sender]: [summarization]\n\n- Email from [sender]: [summarization]\n\n[And so on, only for IMPORTANT emails]\n\nALL MAILS\n\n- Email from [sender]: [summarization]\n\n- Email from [sender]: [summarization]\n\n[and so on, for ALL emails]\n)\n\n\nHere are the emails:\n\n{{ $json.digest }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.ollama",
+      "typeVersion": 1,
+      "position": [
+        928,
+        -80
+      ],
+      "id": "7d9363bf-7909-45cc-91fa-d38ea5c02f4a",
+      "name": "Message a model",
+      "retryOnFail": true,
+      "credentials": {
+        "ollamaApi": {
+          "id": "YOUR_OLLAMA_CREDENTIAL_ID",
+          "name": "Ollama account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_NTFY_URL/YOUR_TOPIC",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Title",
+              "value": "=ERROR in Ollama node."
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "=",
+        "options": {}
+      },
+      "id": "4a8f7d8f-0bd5-4906-aebf-910488f098b4",
+      "name": "Send ntfy Notification1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1328,
+        80
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Every day at 17:00": {
+      "main": [
+        [
+          {
+            "node": "Get Today's Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Today's Emails": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate Emails": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Send ntfy Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send ntfy Notification1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false,
+    "timeSavedMode": "fixed",
+    "timezone": "Europe/Amsterdam",
+    "callerPolicy": "workflowsFromSameOwner"
+  },
+  "versionId": "98bee0cd-de89-4948-af36-8ae1b45a024c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "tags": []
+}

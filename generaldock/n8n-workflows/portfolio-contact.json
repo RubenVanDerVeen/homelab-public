@@ -1,0 +1,76 @@
+{
+  "name": "portfolio-contact",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "INSERT_WEBHOOK_PATH_HERE",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "e0bf1171-4a30-4a8b-aa73-3902978625c6",
+      "name": "Webhook",
+      "webhookId": "INSERT_WEBHOOK_PATH_HERE"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "INSERT_NTFY_PATH_HERE",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Title",
+              "value": "=Someone wants to contact you."
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text/plain",
+        "body": "=Name: {{ $json.body.name }}\nEmail: {{ $json.body.email }}\nMessage:\n\n{{ $json.body.message }}",
+        "options": {}
+      },
+      "id": "c9d6c1bb-b8a0-465b-b260-39b614572639",
+      "name": "Send ntfy Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        256,
+        0
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Send ntfy Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "ea46f235-8561-44cf-8ce3-62203d3b561d",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "YOUR_INSTANCE_ID"
+  },
+  "id": "YOUR_WORKFLOW_ID",
+  "tags": []
+}

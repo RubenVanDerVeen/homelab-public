@@ -1,0 +1,202 @@
+###############################################
+# Common Keys for all apps
+###############################################
+
+x-common-keys: &common-keys
+    restart: unless-stopped
+    logging:
+      driver: json-file
+    environment:
+      PUID: 1000
+      PGID: 1000
+      TZ: Europe/Amsterdam
+    dns:
+      - 1.1.1.1
+      - 1.0.0.1
+
+networks:
+  tugtainer_agent:
+    driver: bridge
+  default:
+    name: arr_network
+
+services:
+###############################################
+# RADARR - Movies
+###############################################
+  radarr:
+    <<: *common-keys
+    container_name: radarr
+    image: ghcr.io/hotio/radarr:latest
+    ports:
+      - 7878:7878
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/radarr:/config
+      - /data:/data
+
+###############################################
+# SONARR - TV Shows
+###############################################
+
+  sonarr:
+    <<: *common-keys
+    container_name: sonarr
+    image: ghcr.io/hotio/sonarr:latest
+    ports:
+      - 8989:8989
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/sonarr:/config
+      - /data:/data
+
+###############################################
+# LIDARR - Music
+###############################################
+
+  lidarr:
+    <<: *common-keys
+    container_name: lidarr
+    image: ghcr.io/hotio/lidarr:latest
+    ports:
+      - 8686:8686
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/lidarr:/config
+      - /data:/data
+
+###############################################
+# BAZARR - Subtitles
+###############################################
+
+  bazarr:
+    <<: *common-keys
+    container_name: bazarr
+    image: ghcr.io/hotio/bazarr:latest
+    ports:
+      - 6767:6767
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/bazarr:/config
+      - /data/media:/data/media
+
+###############################################
+# PROWLARR - Indexer Manager
+###############################################
+
+  prowlarr:
+    <<: *common-keys
+    container_name: prowlarr
+    image: ghcr.io/hotio/prowlarr:latest
+    ports:
+      - 9696:9696
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/prowlarr:/config
+
+###############################################
+# QBITTORRENT - Downloader
+###############################################
+
+  qbittorrent:
+    <<: *common-keys
+    container_name: qbittorrent
+    image: ghcr.io/hotio/qbittorrent:latest
+    ports:
+      - 8080:8080
+      - 6881:6881
+      - 6881:6881/udp
+    environment:
+      - WEBUI_PORT=8080
+      - TORRENTING_PORT=6881
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/qbittorrent:/config
+      - /data:/data
+
+###############################################
+# JELLYFIN - Media Server
+###############################################
+
+  jellyfin:
+    <<: *common-keys
+    container_name: jellyfin
+    image: ghcr.io/hotio/jellyfin:latest
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - /docker/appdata/jellyfin:/config
+      - /data/media:/data/media:ro #read-only
+    ports:
+      - 8096:8096
+
+###############################################
+# Tugtainer agent - remote updating
+###############################################
+
+  # Socket proxy is used by default,
+  # but you can mount docker socket directly
+  # and remove this service and DOCKER_HOST variable
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: socket-proxy
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      IMAGES: 1
+      INFO: 1
+      LOG_LEVEL: warning
+      PING: 1
+      NETWORKS: 1
+      POST: 1
+      TZ: Europe/Amsterdam
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer_agent
+    labels:
+      dev.quenary.tugtainer.protected: True
+  agent:
+    depends_on:
+      - socket-proxy
+    container_name: tugtainer-agent
+    image: ghcr.io/quenary/tugtainer-agent:1
+    # volumes:
+      # You can uncomment this to mount socket directly,
+      # and remove socket-proxy service and DOCKER_HOST variable
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    environment:
+      # The list of available variables is in env.example
+      AGENT_SECRET: INSERT_SECRET
+      DOCKER_HOST: tcp://socket-proxy:2375
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer_agent
+    ports:
+      - '9413:8001'
+    labels:
+      dev.quenary.tugtainer.protected: True
+
+###############################################
+# Watchtower - Automatic container updates
+###############################################
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Europe/Amsterdam
+      - WATCHTOWER_SCHEDULE=0 0 3 * * 0
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=generic+http://<NTFY_IP>:<NTFY_PORT>/container-updates

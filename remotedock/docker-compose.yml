@@ -1,0 +1,211 @@
+###############################################
+# RemoteDock Docker compose
+###############################################
+
+networks:
+  tugtainer_agent:
+    driver: bridge
+
+services:
+###############################################
+# Tugtainer with Socketproxy
+###############################################
+
+  # Socket proxy is used by default,
+  # but you can mount docker socket directly
+  # and remove this service and DOCKER_HOST variable
+  socket-proxy:
+    image: lscr.io/linuxserver/socket-proxy:latest
+    container_name: socket-proxy
+    environment:
+      CONTAINERS: 1
+      EVENTS: 1
+      IMAGES: 1
+      INFO: 1
+      LOG_LEVEL: warning
+      PING: 1
+      NETWORKS: 1
+      POST: 1
+      TZ: Europe/Amsterdam
+      VERSION: 1
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer_agent
+    labels:
+      dev.quenary.tugtainer.protected: True
+  agent:
+    depends_on:
+      - socket-proxy
+    container_name: tugtainer-agent
+    image: ghcr.io/quenary/tugtainer-agent:1
+    # volumes:
+      # You can uncomment this to mount socket directly,
+      # and remove socket-proxy service and DOCKER_HOST variable
+      # - /var/run/docker.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+    environment:
+      # The list of available variables is in env.example
+      AGENT_SECRET: INSERT_SECRET
+      DOCKER_HOST: tcp://socket-proxy:2375
+    read_only: true
+    tmpfs:
+      - /run
+    networks:
+      - tugtainer_agent
+    ports:
+      - '9413:8001'
+    labels:
+      dev.quenary.tugtainer.protected: True
+
+###############################################
+# Rustdesk - remote service
+###############################################
+
+# Compose of RustDesk can be found at:
+# Rustdesk/docker-compose.yml
+
+###############################################
+# Nginx - Proxy Manager
+###############################################
+  nginx:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+
+    ports:
+      # These ports are in format <host-port>:<container-port>
+      - '80:80' # Public HTTP Port
+      - '443:443' # Public HTTPS Port
+      - '81:81' # Admin Web Port
+      # Add any other Stream port you want to expose
+      # - '21:21' # FTP
+
+    environment:
+      TZ: "Europe/Amsterdam"
+      PUID: 1000
+      PGID: 1000
+      # Uncomment this if you want to change the location of
+      # the SQLite DB file within the container
+      # DB_SQLITE_FILE: "/data/database.sqlite"
+
+      # Uncomment this if IPv6 is not enabled on your host
+      # DISABLE_IPV6: 'true'
+
+    volumes:
+      - ./data:/data
+      - ./letsencrypt:/etc/letsencrypt
+
+###############################################
+# Pi-Hole - DNS server
+###############################################
+
+  pihole:
+    container_name: pihole
+    image: pihole/pihole:latest
+    ports:
+      # DNS Ports
+      - "53:53/tcp"
+      - "53:53/udp"
+      # Default HTTP Port
+      - "8081:80/tcp"
+      # Default HTTPs Port. FTL will generate a self-signed certificate
+      # "8443:443/tcp"
+      # Uncomment the line below if you are using Pi-hole as your DHCP server
+      #- "67:67/udp"
+      # Uncomment the line below if you are using Pi-hole as your NTP server
+      #- "123:123/udp"
+    environment:
+      # Set the appropriate timezone for your location (https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), e.g:
+      TZ: 'Europe/Amsterdam'
+      # Set a password to access the web interface. Not setting one will result in a random password being assigned
+      FTLCONF_webserver_api_password: 'INSERT_PASSWORD'
+      # If using Docker's default `bridge` network setting the dns listening mode should be set to 'ALL'
+      FTLCONF_dns_listeningMode: 'ALL'
+    # Volumes store your data between container upgrades
+    volumes:
+      # For persisting Pi-hole's databases and common configuration file
+      - './etc-pihole:/etc/pihole'
+      # Uncomment the below if you have custom dnsmasq config files that you want to persist. Not needed for most starting fresh with Pi-hole v6. If you're
+      #- './etc-dnsmasq.d:/etc/dnsmasq.d'
+    cap_add:
+      # See https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+      # Required if you are using Pi-hole as your DHCP server, else not needed
+      - NET_ADMIN
+      # Required if you are using Pi-hole as your NTP client to be able to set the host's system time
+      - SYS_TIME
+      # Optional, if Pi-hole should get some more processing time
+      - SYS_NICE
+    restart: unless-stopped
+
+###############################################
+# Cloudflare tunnel
+###############################################
+
+  cloudflared:
+    container_name: cloudflared
+    image: cloudflare/cloudflared:latest
+    command: tunnel run
+    environment:
+      TUNNEL_TOKEN: INSERT_TOKEN
+
+###############################################
+# DDNS for cloudflare
+###############################################
+
+  ddns:
+    image: favonia/cloudflare-ddns:latest
+    container_name: cloudflare-ddns
+    # network_mode: host # This bypasses network isolation and makes IPv6 easier (optional; see below)
+    restart: always
+    user: "1000:1000" # Run the updater with specific user and group IDs (in that order).
+    read_only: true # Make the container filesystem read-only (optional but recommended)
+    cap_drop: [all] # Drop all Linux capabilities (optional but recommended)
+    security_opt: [no-new-privileges:true] # Another protection to restrict superuser privileges (optional but recommended)
+    environment:
+      - CLOUDFLARE_API_TOKEN=INSERT_APITOKEN
+      - DOMAINS=INSERT_DOMAIN
+      - PROXIED=true
+      - IP6_PROVIDER=none
+
+###############################################
+# Watchtower - Automatic container updates
+###############################################
+
+  watchtower:
+    image: containrrr/watchtower:latest
+    container_name: watchtower
+    restart: unless-stopped
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - TZ=Europe/Amsterdam
+      - WATCHTOWER_SCHEDULE=0 0 3 * * 0
+      - WATCHTOWER_CLEANUP=true
+      - WATCHTOWER_NOTIFICATIONS=shoutrrr
+      - WATCHTOWER_NOTIFICATION_URL=generic+http://<NTFY_IP>:<NTFY_PORT>/container-updates
+
+###############################################
+# Nginx Static - Static site hosting
+###############################################
+
+  nginx-static:
+    image: nginx:alpine
+    container_name: nginx-static
+    restart: unless-stopped
+    ports:
+      - '8082:80'
+    volumes:
+      - /path/to/static-site/n8n:/usr/share/nginx/html:ro
+
+  nginx-portfolio:
+    image: nginx:alpine
+    container_name: nginx-portfolio
+    restart: unless-stopped
+    ports:
+      - '8083:80'
+    volumes:
+      - /path/to/static-site/portfolio:/usr/share/nginx/html:ro
