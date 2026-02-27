@@ -192,9 +192,9 @@ services:
 # Nginx Static - Static site hosting
 ###############################################
 
-  nginx-static:
+  nginx-n8n:
     image: nginx:alpine
-    container_name: nginx-static
+    container_name: nginx-n8n
     restart: unless-stopped
     ports:
       - '8082:80'
