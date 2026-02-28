@@ -1,5 +1,5 @@
 {
-  "name": "School-mail-sumarized",
+  "name": "school-mail-sumarized",
   "nodes": [
     {
       "parameters": {
@@ -23,8 +23,8 @@
       "type": "n8n-nodes-base.gmailTrigger",
       "typeVersion": 1,
       "position": [
-        1232,
-        -544
+        1216,
+        -464
       ],
       "credentials": {
         "gmailOAuth2": {
@@ -58,8 +58,8 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1728,
-        -544
+        1952,
+        -400
       ]
     },
     {
@@ -82,8 +82,8 @@
       "type": "@n8n/n8n-nodes-langchain.ollama",
       "typeVersion": 1,
       "position": [
-        1424,
-        -544
+        1584,
+        -400
       ],
       "id": "c42e6d50-0ee7-4d4f-b00e-fbf3e847a3d2",
       "name": "Message a model",
@@ -93,6 +93,67 @@
           "name": "Ollama account"
         }
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "b7644fe3-5b0d-4d2b-bb6d-acac46d57914",
+              "leftValue": "={{ $json.subject }}",
+              "rightValue": "Submission received",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.3,
+      "position": [
+        1408,
+        -464
+      ],
+      "id": "b0197b0e-d74e-4436-8c98-4e9380e7f548",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "YOUR_NTFY_URL/YOUR_TOPIC",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Title",
+              "value": "={{ $('Gmail Trigger').item.json.subject }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "contentType": "raw",
+        "rawContentType": "text",
+        "body": "Submission has been received.",
+        "options": {}
+      },
+      "id": "7a4b1906-87e2-4b89-819f-a1c893264390",
+      "name": "Send ntfy Notification",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1952,
+        -560
+      ]
     }
   ],
   "pinData": {},
@@ -101,7 +162,7 @@
       "main": [
         [
           {
-            "node": "Message a model",
+            "node": "If",
             "type": "main",
             "index": 0
           }
@@ -118,6 +179,24 @@
           }
         ]
       ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Send ntfy Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": true,
@@ -126,7 +205,7 @@
     "binaryMode": "separate",
     "availableInMCP": false
   },
-  "versionId": "6e56ac43-36a0-479c-91c5-fdca6bcdf057",
+  "versionId": "b38a9d32-b491-4cb5-a17b-9279193a2738",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "YOUR_INSTANCE_ID"

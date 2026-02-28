@@ -17,7 +17,7 @@
       "type": "n8n-nodes-base.scheduleTrigger",
       "typeVersion": 1.2,
       "position": [
-        128,
+        208,
         -80
       ]
     },
@@ -34,7 +34,7 @@
       "type": "n8n-nodes-base.gmail",
       "typeVersion": 2,
       "position": [
-        432,
+        400,
         -80
       ],
       "webhookId": "YOUR_WEBHOOK_ID",
@@ -55,7 +55,7 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        704,
+        800,
         -80
       ]
     },
@@ -69,13 +69,17 @@
             {
               "name": "Title",
               "value": "=Daily email digest: {{ $('Aggregate Emails').item.json.count }} emails"
+            },
+            {
+              "name": "Priority",
+              "value": "3"
             }
           ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "text/plain",
-        "body": "={{ $json.content }}",
+        "body": "={{ $json.message.content }}",
         "options": {}
       },
       "id": "cec21ab1-a9b4-40a6-aae5-bd5ea70c06c4",
@@ -83,43 +87,9 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1328,
+        1536,
         -96
       ]
-    },
-    {
-      "parameters": {
-        "modelId": {
-          "__rl": true,
-          "value": "llama3.2:latest",
-          "mode": "list",
-          "cachedResultName": "llama3.2:latest"
-        },
-        "messages": {
-          "values": [
-            {
-              "content": "=You are my personal email assistant. Below are all emails I received today ({{ $json.count }} total).\n\nAt the top of your output, list any IMPORTANT emails - ones requiring action, with deadlines, or from important senders. List explicitly what action it needs and summarize it in 1 - 2 sentences. Below that list every mail and also summarize those in 1 - 2 sentences.\nDon't bold the text. Use the following architecture EXAMPLE for your entire output:\n(\nIMPORTANT EMAILS\n\n- Email from [sender]: [summarization]\n\n- Email from [sender]: [summarization]\n\n[And so on, only for IMPORTANT emails]\n\nALL MAILS\n\n- Email from [sender]: [summarization]\n\n- Email from [sender]: [summarization]\n\n[and so on, for ALL emails]\n)\n\n\nHere are the emails:\n\n{{ $json.digest }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.ollama",
-      "typeVersion": 1,
-      "position": [
-        928,
-        -80
-      ],
-      "id": "7d9363bf-7909-45cc-91fa-d38ea5c02f4a",
-      "name": "Message a model",
-      "retryOnFail": true,
-      "credentials": {
-        "ollamaApi": {
-          "id": "YOUR_OLLAMA_CREDENTIAL_ID",
-          "name": "Ollama account"
-        }
-      },
-      "onError": "continueErrorOutput"
     },
     {
       "parameters": {
@@ -131,13 +101,17 @@
             {
               "name": "Title",
               "value": "=ERROR in Ollama node."
+            },
+            {
+              "name": "Priority",
+              "value": "4"
             }
           ]
         },
         "sendBody": true,
         "contentType": "raw",
         "rawContentType": "text/plain",
-        "body": "=",
+        "body": "={{ $json.error.message }}",
         "options": {}
       },
       "id": "4a8f7d8f-0bd5-4906-aebf-910488f098b4",
@@ -145,9 +119,78 @@
       "type": "n8n-nodes-base.httpRequest",
       "typeVersion": 4.2,
       "position": [
-        1328,
+        1536,
         80
       ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://YOUR_OLLAMA_HOST:11434/api/chat",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $json }}",
+        "options": {
+          "timeout": 1200000
+        }
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1216,
+        -80
+      ],
+      "id": "85a3487c-3bf8-473f-91de-3a3db7f4563e",
+      "name": "HTTP Request",
+      "retryOnFail": false,
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "const count = $json.count;\nconst digest = $json.digest;\n\nconst prompt = `You are my personal email assistant. at the end of this message are all emails I received today (${count} total).\n\nAt the top of your output, LIST any IMPORTANT emails - ones requiring action, with deadlines, or from important senders. List explicitly what action it needs and summarize the content in 1 - 2 sentences. Below that list every mail and also summarize those in 1 - 2 sentences. Don't bold the text. Use the following architecture EXAMPLE for your entire output:\n(\nIMPORTANT EMAILS\n\n- Email from [sender]: [summarization]\n\n- Email from [sender]: [summarization]\n\n[And do so for every mail you think would be important]\n\nALL MAILS\n\n- Email from [sender]: [summarization]\n\n- Email from [sender]: [summarization]\n\n[and so on, for ALL emails]\n)\n\nHere are the emails you need summarize:\n\n${digest}`;\n\nreturn {\n  json: {\n    model: \"llama3.2:latest\",\n    stream: false,\n    messages: [{ role: \"user\", content: prompt }]\n  }\n};"
+      },
+      "id": "befd9a24-fb02-4ba9-97ca-a0ee7e2995f6",
+      "name": "Simplify for request",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1008,
+        -80
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 3
+          },
+          "conditions": [
+            {
+              "id": "cc7193be-af9d-46cc-bef3-608476f1753b",
+              "leftValue": "={{ $json.Subject }}",
+              "rightValue": "=Submission received",
+              "operator": {
+                "type": "string",
+                "operation": "notContains"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.filter",
+      "typeVersion": 2.3,
+      "position": [
+        592,
+        -80
+      ],
+      "id": "43cfa213-ef81-4af9-9c90-01648489feec",
+      "name": "Filter Submissions"
     }
   ],
   "pinData": {},
@@ -167,7 +210,7 @@
       "main": [
         [
           {
-            "node": "Aggregate Emails",
+            "node": "Filter Submissions",
             "type": "main",
             "index": 0
           }
@@ -178,14 +221,14 @@
       "main": [
         [
           {
-            "node": "Message a model",
+            "node": "Simplify for request",
             "type": "main",
             "index": 0
           }
         ]
       ]
     },
-    "Message a model": {
+    "HTTP Request": {
       "main": [
         [
           {
@@ -202,9 +245,31 @@
           }
         ]
       ]
+    },
+    "Simplify for request": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter Submissions": {
+      "main": [
+        [
+          {
+            "node": "Aggregate Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
-  "active": false,
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
@@ -213,7 +278,7 @@
     "timezone": "Europe/Amsterdam",
     "callerPolicy": "workflowsFromSameOwner"
   },
-  "versionId": "98bee0cd-de89-4948-af36-8ae1b45a024c",
+  "versionId": "ffb22525-dc9c-47f5-8fc0-1b564ba6ff63",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "YOUR_INSTANCE_ID"
